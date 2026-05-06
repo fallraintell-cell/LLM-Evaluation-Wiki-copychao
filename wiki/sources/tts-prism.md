@@ -4,7 +4,7 @@ type: source
 created: 2026-05-06
 updated: 2026-05-06
 tags: [语音评测, TTS, 多维度评测, rubric-based, LLM-as-Judge, 中文, 小米]
-sources: [raw/papers/tts-prism.pdf, raw/github/tts-prism]
+sources: [raw/papers/tts-prism.pdf, raw/papers/2604.22225v1-tts-prism.pdf, raw/github/tts-prism]
 ---
 
 ## 概述
@@ -77,6 +77,25 @@ TTS-PRISM（A Perceptual Reasoning and Interpretable Speech Model for Fine-Grain
 
 TTS-PRISM 在多数维度上超越所有通用模型（含 Gemini-2.5-Pro），仅在 Pronunciation Accuracy 上弱于 Gemini（ASR 预训练的 error-tolerant 偏差难以通过 SFT 消除）。
 
+**ID vs OOD 泛化性**（Table 3，20% OOD 子集含训练时未见的声学缺陷）：
+
+| 子集 | Basic SRCC | Advanced SRCC | Basic MSE_norm | Advanced MSE_norm |
+|------|-----------|--------------|----------------|-------------------|
+| ID (80%) | 0.733 | 0.720 | 0.041 | 0.045 |
+| OOD (20%) | 0.695 | 0.680 | 0.051 | 0.060 |
+
+OOD 性能仅下降约 5%，证明 schema-driven tuning 学到的是声学判断规则而非记忆特定缺陷模式。
+
+**Rationale Support Consistency (RSC) 分析**：
+
+| 模型 | RSC | 与人类对齐 | 解读 |
+|------|-----|-----------|------|
+| Qwen3-Omni | 0.88 | 低 | 推理自洽但与声学现实脱节（"幻觉一致性"） |
+| Step-Audio-R1 | 0.91 | 中 | 同上，coherent reasoning ≠ accurate diagnosis |
+| TTS-PRISM | **0.98** | **高** | Schema 锚点确保推理紧贴声学证据 |
+
+关键洞察：高 RSC + 低对齐 = "幻觉一致性"悖论；Schema-driven tuning 同时实现高 RSC 和高对齐。
+
 ### 5. TTS 系统诊断画像（Diagnostic Flags）
 
 基于 12 维分数为 6 个主流 TTS 系统赋予直觉化标签：
@@ -86,6 +105,27 @@ TTS-PRISM 在多数维度上超越所有通用模型（含 Gemini-2.5-Pro），�
 - Qwen3-TTS → "Pronunciation-Accurate"
 - FireRedTTS-2 → "Balanced"
 - IndexTTS2 → "Highly Expressive"
+
+**Advanced Expressiveness 详细得分**（500 utterances/system，0-2 scale）：
+
+| 系统 | Stress | Lengthening | Paralinguistics | Emotion Expression |
+|------|--------|-------------|-----------------|-------------------|
+| F5-TTS | 0.540 | 0.297 | 0.114 | 0.890 |
+| CosyVoice 3 | **1.390** | 0.266 | **0.735** | 0.810 |
+| MaskGCT | 0.667 | 0.067 | 0.181 | 0.722 |
+| Qwen3-TTS | 1.210 | 0.227 | 0.549 | 0.990 |
+| FireRedTTS-2 | 1.270 | 0.330 | 0.490 | 1.033 |
+| IndexTTS2 | 1.191 | **1.033** | 0.547 | **1.043** |
+
+关键发现：Basic Capability 层呈现"天花板效应"（所有系统 Consistency > 4.9），真正差异体现在 Advanced Expressiveness 层。
+
+**被评测 TTS 系统参考**（均为 2024-2026 年最新工作）：
+- CosyVoice 3（阿里，arXiv:2505.17589）
+- F5-TTS（ACL 2025，flow matching）
+- MaskGCT（ICLR 2025，masked generative codec transformer）
+- Qwen3-TTS（阿里，arXiv:2601.15621）
+- FireRedTTS-2（arXiv:2509.02020，长对话播客）
+- IndexTTS2（arXiv:2506.21619，情感 AR zero-shot）
 
 ### 6. 消融实验
 
